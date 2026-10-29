@@ -25,6 +25,12 @@ COPY app/ ./
 FROM node:20.18-slim
 WORKDIR /app
 
+# Patch OS packages, and remove the bundled npm (ships a vulnerable tar) — runtime doesn't need it.
+RUN apt-get update \
+    && apt-get upgrade -y --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
+
 # TODO(step-4e): copy the fully-installed app from the builder stage.
 COPY --from=builder /app ./
 
@@ -38,4 +44,4 @@ HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=5 \
     CMD node -e "require('http').get('http://localhost:3000/health', r => process.exit(r.statusCode===200?0:1)).on('error', () => process.exit(1))"
 
 # TODO(step-4g): declare the container start command.
-CMD ["npm", "start"]
+CMD ["node", "src/index.js"]
